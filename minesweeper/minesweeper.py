@@ -5,13 +5,16 @@ class Minesweep(Fl_Window):
     pictures = ['0.png','1.png','2.png','3.png','4.png','5.png','6.png','7.png','8.png','mine.png','flag.png']
     altered = ['0a.png','1a.png','2a.png','3a.png','4a.png','5a.png','6a.png','7a.png','8a.png','minea.png','flaga.png']
     square = Fl_PNG_Image('square.png')
+    minecount = 10 #mines set and time elapsed
+    minecount_1 = minecount #just for reference
+    sidelength = 10
     def __init__(self, w, h):
         '''instantiates the class and creates the game'''
         super().__init__(0, 0, w, h, 'Minesweeper')
 
         #variables used to keep track:
         self.revealed = [] #revealed squares
-        self.minecount = self.time = 0 #mines set and time elapsed
+        self.time = 0
         self.buttons = [] #buttons
         self.mines = [] #buttons that are mines
         self.to_start = False #game started
@@ -22,14 +25,16 @@ class Minesweep(Fl_Window):
 
         self.outp = Fl_Output(0, 0, w, 50) #outputs score
 
-        for buty in range(10):
-            for butx in range(10):
-                but = Fl_Button(butx*50, 50 + buty*50, 50, 50)
+        self.size = w//Minesweep.sidelength
+
+        for buty in range(Minesweep.sidelength):
+            for butx in range(Minesweep.sidelength):
+                but = Fl_Button(butx * self.size, 50 + buty*((h-50)//Minesweep.sidelength), self.size, self.size)
                 self.buttons.append([but,None,False,None,None])
-                self.buttons[-1][0].callback(self.but_cb, buty*10 + butx)
-                self.buttons[-1][0].image(Minesweep.square.copy(50,50))
+                self.buttons[-1][0].callback(self.but_cb, buty*Minesweep.sidelength + butx)
+                self.buttons[-1][0].image(Minesweep.square.copy(self.size, self.size))
                 self.buttons[-1][4] = Minesweep.square
-                self.buttons[-1][0].redraw() #creates 10x10 grid with an image and adds callbacks
+                self.buttons[-1][0].redraw() #creates length x length grid with an image and adds callbacks
 
         self.group.end()
 
@@ -48,13 +53,13 @@ class Minesweep(Fl_Window):
 
     def mineset(self):
         '''sets the mines in the grid'''
-        if self.minecount == 10: #if there are already 10 mines function ends
+        if Minesweep.minecount == 0: #if there are already enough mines function ends
             return
-        randbut = random.randrange(0,100)
+        randbut = random.randrange(0,Minesweep.sidelength**2)
         if self.buttons[randbut][1] == None: #if the chosen square is not already a mine
             self.buttons[randbut][1] = 9 #set it as a mine
             self.mines.append(randbut)
-            self.minecount += 1 #adds one to minecount
+            Minesweep.minecount -= 1 #adds one to minecount
         self.mineset()
 
     def num_assign(self):
@@ -68,9 +73,9 @@ class Minesweep(Fl_Window):
         bombs = 0
         for num in range(-1,2):
             for num1 in range(-1,2):
-                if but%10 + num1 in range(0,10): #squares beyond right and left side column counted
-                    if but//10 + num in range(0,10): #squares beyong top and bottom row not counted
-                        if self.buttons[but + (10*num) + num1][1] == 9:
+                if but % Minesweep.sidelength + num1 in range(0,Minesweep.sidelength): #squares beyond right and left side column counted
+                    if but//Minesweep.sidelength + num in range(0,Minesweep.sidelength): #squares beyong top and bottom row not counted
+                        if self.buttons[but + (Minesweep.sidelength*num) + num1][1] == 9:
                             bombs += 1 #if there is a bomb, add 1
         return bombs
 
@@ -78,16 +83,16 @@ class Minesweep(Fl_Window):
         '''finds the amount of squares to reveal'''
         for num in range(-1,2):
             for num1 in range(-1,2):
-                if but + (num*10) + num1 in range(0,100) and but%10 + num1 in range(0,10) and but//10 + num in range(0,10):
+                if but + (num*Minesweep.sidelength) + num1 in range(0,Minesweep.sidelength**2) and but%Minesweep.sidelength + num1 in range(0,Minesweep.sidelength) and but//Minesweep.sidelength + num in range(0,Minesweep.sidelength):
                     #like the previous function, only detects relevant squares
                     if self.buttons[but][1] == 0: #if the button has no mines around it (number 0)
-                        if self.buttons[but + (num*10) + num1][1] in range(0,9): #if the squares around the square is a non-zero number
-                            if but + (num*10) + num1 not in self.to_reveal: #if said square is not already revealed
-                                self.to_reveal.append(but + (num*10) + num1) #add it to the "to add" list
-                    if self.buttons[but + (num*10) + num1][1] == 0: #if a square containing 0 is detected around
-                        if but + (num*10) + num1 not in self.revealed: #if that square is not already added
-                            self.revealed.append(but + (num*10) + num1)
-                            self.reveal(but + (num*10) + num1) #pass the square through the same function
+                        if self.buttons[but + (num*Minesweep.sidelength) + num1][1] in range(0,9): #if the squares around the square is a non-zero number
+                            if but + (num*Minesweep.sidelength) + num1 not in self.to_reveal: #if said square is not already revealed
+                                self.to_reveal.append(but + (num*Minesweep.sidelength) + num1) #add it to the "to add" list
+                    if self.buttons[but + (num*Minesweep.sidelength) + num1][1] == 0: #if a square containing 0 is detected around
+                        if but + (num*Minesweep.sidelength) + num1 not in self.revealed: #if that square is not already added
+                            self.revealed.append(but + (num*Minesweep.sidelength) + num1)
+                            self.reveal(but + (num*Minesweep.sidelength) + num1) #pass the square through the same function
                     else:
                         if but not in self.to_reveal: #if the button pressed is not already revealed
                             self.to_reveal.append(but) #just show the button if there are no "0"s around
@@ -124,7 +129,7 @@ class Minesweep(Fl_Window):
                         self.game_end(False)
                 self.to_reveal = []
 
-                if len(self.revealed) == 90: #if all 90 squares are clicked, game ends as a win (True)
+                if len(self.revealed) == (Minesweep.sidelength**2) - Minesweep.minecount_1: #if all non-mine squares are clicked/revealed, game ends as a win (True)
                     self.game_end(True)
 
 
@@ -173,6 +178,7 @@ class Minesweep(Fl_Window):
             but[0].image(but[4].copy(but[0].w(),but[0].h()))
             but[0].redraw() #redraws the button with its original picture
 
-game = Minesweep(500,550)
+length = 600
+game = Minesweep(length, length + 50)
 game.show()
 Fl.run()
